@@ -93,6 +93,8 @@ void ConnectionOptions::_set_option(const std::string &key,
         opts.connect_timeout = _parse_timeout_option(val);
     } else if (key == "socket_timeout") {
         opts.socket_timeout = _parse_timeout_option(val);
+    } else if (key == "client_name") {
+        opts.client_name = val;
     } else {
         throw Error("unknown uri parameter");
     }
@@ -170,7 +172,7 @@ auto ConnectionOptions::_split_uri(const std::string &uri) const
     auto type = uri.substr(0, pos);
 
     auto start = pos + 3;
-    pos = uri.find("@", start);
+    pos = uri.rfind("@");
     if (pos == std::string::npos) {
         // No auth info.
         return std::make_tuple(type, std::string{}, uri.substr(start));
@@ -439,6 +441,8 @@ void Connection::_set_options() {
 
     _select_db();
 
+    _set_client_name();
+
     if (_opts.readonly) {
         _enable_readonly();
     }
@@ -481,6 +485,20 @@ void Connection::_select_db() {
     }
 
     cmd::select(*this, _opts.db);
+
+    auto reply = recv();
+
+    assert(reply);
+
+    reply::parse<void>(*reply);
+}
+
+void Connection::_set_client_name() {
+    if (_opts.client_name.empty()) {
+        return;
+    }
+
+    send("CLIENT SETNAME %b", _opts.client_name.data(), _opts.client_name.size());
 
     auto reply = recv();
 

@@ -65,6 +65,8 @@ public:
 
     std::string password;
 
+    std::string client_name;
+
     int db = 0;
 
     bool keep_alive = false;
@@ -180,6 +182,8 @@ private:
     void _auth();
 
     void _select_db();
+
+    void _set_client_name();
 
     void _enable_readonly();
 
